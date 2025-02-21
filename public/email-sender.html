@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Sender</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4285f4;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .nav-link {
+            display: block;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #4285f4;
+        }
+    </style>
+</head>
+<body>
+    <h2>Email Sender</h2>
+    <form id="email-form">
+        <div class="form-group">
+            <label>To:</label>
+            <input type="email" id="to" required>
+        </div>
+        <div class="form-group">
+            <label>Subject:</label>
+            <input type="text" id="subject" required>
+        </div>
+        <div class="form-group">
+            <label>Message:</label>
+            <textarea id="text" rows="5" required></textarea>
+        </div>
+        <button type="submit">Send Email</button>
+    </form>
+
+    <div id="result"></div>
+
+    <a href="/" class="nav-link">Back to Dashboard</a>
+
+    <script>
+        document.getElementById('email-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const to = document.getElementById('to').value;
+            const subject = document.getElementById('subject').value;
+            const text = document.getElementById('text').value;
+            
+            try {
+                const response = await fetch('/send-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ to, subject, text })
+                });
+
+                const resultDiv = document.getElementById('result');
+                if (response.ok) {
+                    const result = await response.json();
+                    resultDiv.style.color = 'green';
+                    resultDiv.textContent = `Email sent successfully! Message ID: ${result.messageId}`;
+                } else {
+                    const errorText = await response.text();
+                    resultDiv.style.color = 'red';
+                    resultDiv.textContent = `Error: ${errorText}`;
+                }
+            } catch (error) {
+                console.error('Email sending error:', error);
+                alert('An error occurred while sending email');
+            }
+        });
+    </script>
+</body>
+</html>

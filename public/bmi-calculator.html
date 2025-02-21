@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMI Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+        }
+        button {
+            background-color: #4285f4;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .nav-link {
+            display: block;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #4285f4;
+        }
+    </style>
+</head>
+<body>
+    <h2>BMI Calculator</h2>
+    <form id="bmi-form">
+        <div class="form-group">
+            <label>Weight (kg)</label>
+            <input type="number" id="weight" required>
+        </div>
+        <div class="form-group">
+            <label>Height (cm)</label>
+            <input type="number" id="height" required>
+        </div>
+        <button type="submit">Calculate BMI</button>
+    </form>
+
+    <div id="result"></div>
+
+    <a href="/" class="nav-link">Back to Dashboard</a>
+
+    <script>
+        document.getElementById('bmi-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const weight = document.getElementById('weight').value;
+            const height = document.getElementById('height').value;
+            
+            try {
+                const response = await fetch('/calculate-bmi', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ weight, height })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const resultDiv = document.getElementById('result');
+                    resultDiv.innerHTML = `
+                        BMI: ${result.bmi}<br>
+                        Category: ${result.category}
+                    `;
+                } else {
+                    const errorText = await response.text();
+                    alert(errorText);
+                }
+            } catch (error) {
+                console.error('BMI calculation error:', error);
+                alert('An error occurred while calculating BMI');
+            }
+        });
+    </script>
+</body>
+</html>
