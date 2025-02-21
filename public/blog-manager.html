@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4285f4;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .blog-list {
+            margin-top: 20px;
+        }
+        .blog-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .blog-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .nav-link {
+            display: block;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #4285f4;
+        }
+    </style>
+</head>
+<body>
+    <h2>Blog Manager</h2>
+    
+    <form id="blog-form">
+        <div class="form-group">
+            <label>Title</label>
+            <input type="text" id="blog-title" required>
+        </div>
+        <div class="form-group">
+            <label>Body</label>
+            <textarea id="blog-body" rows="5" required></textarea>
+        </div>
+        <button type="submit" id="submit-blog">Create Blog</button>
+    </form>
+
+    <div class="blog-list" id="blog-list">
+        <h3>Your Blogs</h3>
+    </div>
+
+    <a href="/" class="nav-link">Back to Dashboard</a>
+
+    <script>
+        // Global variables to track current edit state
+        let currentEditId = null;
+
+        // Fetch and display blogs
+        async function fetchBlogs() {
+            try {
+                const response = await fetch('/blogs');
+                const blogs = await response.json();
+                
+                const blogList = document.getElementById('blog-list');
+                blogList.innerHTML = '<h3>Your Blogs</h3>';
+                
+                blogs.forEach(blog => {
+                    const blogItem = document.createElement('div');
+                    blogItem.classList.add('blog-item');
+                    blogItem.innerHTML = `
+                        <h4>${blog.title}</h4>
+                        <p>${blog.body}</p>
+                        <div class="blog-actions">
+                            <button onclick="editBlog('${blog._id}', '${blog.title}', \`${blog.body}\`)">Edit</button>
+                            <button onclick="deleteBlog('${blog._id}')">Delete</button>
+                        </div>
+                    `;
+                    blogList.appendChild(blogItem);
+                });
+            } catch (error) {
+                console.error('Error fetching blogs:', error);
+                alert('Failed to fetch blogs');
+            }
+        }
+
+        // Initial fetch of blogs
+        fetchBlogs();
+
+        // Blog form submission
+        document.getElementById('blog-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('blog-title').value;
+            const body = document.getElementById('blog-body').value;
+
+            try {
+                let response;
+                let method = 'POST';
+                let url = '/blogs';
+
+                // Check if we're editing an existing blog
+                if (currentEditId) {
+                    method = 'PUT';
+                    url = `/blogs/${currentEditId}`;
+                }
+
+                response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ title, body })
+                });
+
+                if (response.ok) {
+                    // Reset form and edit state
+                    document.getElementById('blog-title').value = '';
+                    document.getElementById('blog-body').value = '';
+                    document.getElementById('submit-blog').textContent = 'Create Blog';
+                    currentEditId = null;
+
+                    // Refresh blog list
+                    fetchBlogs();
+                } else {
+                    const errorText = await response.text();
+                    alert(`Error: ${errorText}`);
+                }
+            } catch (error) {
+                console.error('Blog submission error:', error);
+                alert('An error occurred while submitting the blog');
+            }
+        });
+
+        // Edit blog function
+        window.editBlog = function(id, title, body) {
+            // Populate form with existing blog data
+            document.getElementById('blog-title').value = title;
+            document.getElementById('blog-body').value = body;
+            
+            // Change submit button text
+            document.getElementById('submit-blog').textContent = 'Update Blog';
+            
+            // Set current edit ID
+            currentEditId = id;
+        }
+
+        // Delete blog function
+        window.deleteBlog = async function(id) {
+            if (!confirm('Are you sure you want to delete this blog?')) return;
+
+            try {
+                const response = await fetch(`/blogs/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    // Refresh blog list
+                    fetchBlogs();
+                } else {
+                    const errorText = await response.text();
+                    alert(`Error: ${errorText}`);
+                }
+            } catch (error) {
+                console.error('Blog deletion error:', error);
+                alert('An error occurred while deleting the blog');
+            }
+        }
+    </script>
+</body>
+</html>
