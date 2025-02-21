@@ -7,7 +7,7 @@ const path = require('path');
 const QRCode = require('qrcode');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
-const fetch = require('node-fetch');
+const fetch = require('node-fetch').default;
 require('dotenv').config();
 
 const app = express();

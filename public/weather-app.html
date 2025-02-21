@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+        }
+        button {
+            background-color: #4285f4;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        #weather-result {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .nav-link {
+            display: block;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #4285f4;
+        }
+    </style>
+</head>
+<body>
+    <h2>Weather App</h2>
+    <form id="weather-form">
+        <div class="form-group">
+            <label>Enter City</label>
+            <input type="text" id="city" required>
+        </div>
+        <button type="submit">Get Weather</button>
+    </form>
+
+    <div id="weather-result"></div>
+
+    <a href="/" class="nav-link">Back to Dashboard</a>
+
+    <script>
+        // Ensure fetch is available (for older browsers)
+        if (!window.fetch) {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/whatwg-fetch@3.6.2/dist/fetch.umd.min.js';
+            document.head.appendChild(script);
+        }
+
+        document.getElementById('weather-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const city = document.getElementById('city').value;
+            const weatherResult = document.getElementById('weather-result');
+            
+            try {
+                const response = await fetch(`/api/weather/${encodeURIComponent(city)}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (response.ok) {
+                    const weatherData = await response.json();
+                    weatherResult.innerHTML = `
+                        <h3>Weather in ${city}</h3>
+                        <p>Temperature: ${weatherData.temperature}°C</p>
+                        <p>Feels Like: ${weatherData.feelsLike}°C</p>
+                        <p>Description: ${weatherData.description}</p>
+                        <p>Humidity: ${weatherData.humidity}%</p>
+                        <p>Wind Speed: ${weatherData.windSpeed} m/s</p>
+                        <p>Pressure: ${weatherData.pressure} hPa</p>
+                        <p>Country Code: ${weatherData.countryCode}</p>
+                    `;
+                } else {
+                    const errorText = await response.text();
+                    weatherResult.innerHTML = `<p style="color: red;">Error: ${errorText}</p>`;
+                }
+            } catch (error) {
+                console.error('Weather fetch error:', error);
+                weatherResult.innerHTML = `<p style="color: red;">An error occurred while fetching weather data: ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
