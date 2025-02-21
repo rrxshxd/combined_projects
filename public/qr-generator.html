@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+        }
+        button {
+            background-color: #4285f4;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        #qr-result {
+            margin-top: 20px;
+        }
+        #qr-image {
+            max-width: 100%;
+            height: auto;
+        }
+        .nav-link {
+            display: block;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #4285f4;
+        }
+    </style>
+</head>
+<body>
+    <h2>QR Code Generator</h2>
+    <form id="qr-form">
+        <div class="form-group">
+            <label>Enter URL or Text</label>
+            <input type="text" id="qr-data" required>
+        </div>
+        <button type="submit">Generate QR Code</button>
+    </form>
+
+    <div id="qr-result">
+        <img id="qr-image" src="" alt="QR Code" style="display: none;">
+    </div>
+
+    <a href="/" class="nav-link">Back to Dashboard</a>
+
+    <script>
+        document.getElementById('qr-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = document.getElementById('qr-data').value;
+            
+            try {
+                const response = await fetch('/generate-qr', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ data })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const qrImage = document.getElementById('qr-image');
+                    qrImage.src = result.qrCode;
+                    qrImage.style.display = 'block';
+                } else {
+                    const errorText = await response.text();
+                    alert(errorText);
+                }
+            } catch (error) {
+                console.error('QR Code generation error:', error);
+                alert('An error occurred while generating QR Code');
+            }
+        });
+    </script>
+</body>
+</html>
