@@ -1,102 +1,143 @@
+<!-- public/weather-app.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weather App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 500px;
-            margin: 0 auto;
-            padding: 20px;
-            text-align: center;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        input {
-            width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-        }
-        button {
-            background-color: #4285f4;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 10px;
-        }
-        #weather-result {
+        #map { 
+            height: 400px; 
+            width: 100%; 
             margin-top: 20px;
-            text-align: left;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .nav-link {
-            display: block;
-            margin-top: 20px;
-            text-decoration: none;
-            color: #4285f4;
+        .weather-icon {
+            width: 50px;
+            height: 50px;
+        }
+        .card {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
     </style>
 </head>
 <body>
-    <h2>Weather App</h2>
-    <form id="weather-form">
-        <div class="form-group">
-            <label>Enter City</label>
-            <input type="text" id="city" required>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <h1 class="text-center mb-4">Weather Information</h1>
+                
+                <form id="weatherForm" class="mb-4">
+                    <div class="input-group">
+                        <input type="text" id="cityInput" class="form-control" placeholder="Enter city name" required>
+                        <button type="submit" class="btn btn-primary">Get Weather</button>
+                    </div>
+                </form>
+
+                <div id="errorAlert" class="alert alert-danger d-none"></div>
+
+                <div id="weatherCard" class="card mb-4 d-none">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <h2 class="card-title mb-0 me-3">Current Weather</h2>
+                            <img id="weatherIcon" class="weather-icon" alt="Weather icon">
+                        </div>
+                        <div id="weatherDetails"></div>
+                    </div>
+                </div>
+
+                <div id="map" class="d-none"></div>
+            </div>
         </div>
-        <button type="submit">Get Weather</button>
-    </form>
+    </div>
 
-    <div id="weather-result"></div>
-
-    <a href="/" class="nav-link">Back to Dashboard</a>
-
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
-        // Ensure fetch is available (for older browsers)
-        if (!window.fetch) {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/whatwg-fetch@3.6.2/dist/fetch.umd.min.js';
-            document.head.appendChild(script);
+        let map = null;
+
+        document.getElementById('weatherForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const city = document.getElementById('cityInput').value;
+            await getWeatherData(city);
+        });
+
+        async function getWeatherData(city) {
+            try {
+                const errorAlert = document.getElementById('errorAlert');
+                const weatherCard = document.getElementById('weatherCard');
+                const mapDiv = document.getElementById('map');
+                
+                errorAlert.classList.add('d-none');
+                weatherCard.classList.add('d-none');
+                mapDiv.classList.add('d-none');
+
+                const response = await fetch(`/api/weather/${encodeURIComponent(city)}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to fetch weather data');
+                }
+
+                displayWeather(data, city);
+                displayMap(data.coordinates.lat, data.coordinates.lon, city);
+            } catch (error) {
+                showError(error.message);
+            }
         }
 
-        document.getElementById('weather-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const city = document.getElementById('city').value;
-            const weatherResult = document.getElementById('weather-result');
+        function displayWeather(data, city) {
+            const weatherCard = document.getElementById('weatherCard');
+            const weatherDetails = document.getElementById('weatherDetails');
+            const weatherIcon = document.getElementById('weatherIcon');
             
-            try {
-                const response = await fetch(`/api/weather/${encodeURIComponent(city)}`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
+            weatherIcon.src = `http://openweathermap.org/img/w/${data.icon}.png`;
+            
+            weatherDetails.innerHTML = `
+                <p><strong>Location:</strong> ${city}${data.countryCode ? `, ${data.countryCode}` : ''}</p>
+                <p><strong>Temperature:</strong> ${data.temperature}°C</p>
+                <p><strong>Feels like:</strong> ${data.feelsLike}°C</p>
+                <p><strong>Description:</strong> ${data.description}</p>
+                <p><strong>Humidity:</strong> ${data.humidity}%</p>
+                <p><strong>Wind Speed:</strong> ${data.windSpeed} m/s</p>
+                <p><strong>Pressure:</strong> ${data.pressure} hPa</p>
+            `;
 
-                if (response.ok) {
-                    const weatherData = await response.json();
-                    weatherResult.innerHTML = `
-                        <h3>Weather in ${city}</h3>
-                        <p>Temperature: ${weatherData.temperature}°C</p>
-                        <p>Feels Like: ${weatherData.feelsLike}°C</p>
-                        <p>Description: ${weatherData.description}</p>
-                        <p>Humidity: ${weatherData.humidity}%</p>
-                        <p>Wind Speed: ${weatherData.windSpeed} m/s</p>
-                        <p>Pressure: ${weatherData.pressure} hPa</p>
-                        <p>Country Code: ${weatherData.countryCode}</p>
-                    `;
-                } else {
-                    const errorText = await response.text();
-                    weatherResult.innerHTML = `<p style="color: red;">Error: ${errorText}</p>`;
-                }
-            } catch (error) {
-                console.error('Weather fetch error:', error);
-                weatherResult.innerHTML = `<p style="color: red;">An error occurred while fetching weather data: ${error.message}</p>`;
+            weatherCard.classList.remove('d-none');
+        }
+
+        function displayMap(lat, lon, city) {
+            const mapDiv = document.getElementById('map');
+            mapDiv.classList.remove('d-none');
+
+            if (map) {
+                map.remove();
             }
-        });
+
+            map = L.map('map').setView([lat, lon], 10);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            L.marker([lat, lon])
+                .addTo(map)
+                .bindPopup(city)
+                .openPopup();
+        }
+
+        function showError(message) {
+            const errorAlert = document.getElementById('errorAlert');
+            const weatherCard = document.getElementById('weatherCard');
+            const mapDiv = document.getElementById('map');
+
+            errorAlert.textContent = message;
+            errorAlert.classList.remove('d-none');
+            weatherCard.classList.add('d-none');
+            mapDiv.classList.add('d-none');
+        }
     </script>
 </body>
 </html>
